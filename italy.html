@@ -1,0 +1,62 @@
+<html lang="en">
+
+<head>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="http://d3js.org/topojson.v1.min.js"></script>
+    <title>Prvi zadatak</title>
+</head>
+
+<body>
+    <script>
+        var width = 2000;
+        var height = 1500;
+
+        var projection = d3.geo.mercator()
+            .center([-6, 10])
+            .scale(6000)
+            .translate([17600, 4500])
+            .rotate([-180, 0]);
+
+        var path = d3.geo.path()        //generator putanja za stvaranje granica zupanija
+            .projection(projection);
+
+        var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .style("margin-left", "400")
+            .style("background", "darkblue");
+
+        d3.select("body")
+            .append("div")
+            .attr("id", "name")
+            .style("color", "red")
+            .style("text-align", "center")
+            .style("font-size", "40px");
+        ;
+
+        d3.json("italy.json", function (error, italy) {
+            var data = topojson.feature(italy, italy.objects.italy);   //pretvaranje TopoJSON objekta u GeoJSON format
+            var states = svg.selectAll("path.county")
+                .data(data.features)
+                .enter()
+                .append("path")
+                .attr("class", "county")
+                .attr("id", function (d) {
+                    return d.id;
+                })
+                .attr("d", path).style("fill", "white")
+                .style("stroke", "red")
+                .style("stroke-width", 2)
+                .style("stroke-opacity", 1)
+
+                /*----*/
+                .on("mouseover", function (d) {                     //kada predemo preko zupanije
+                    console.log(d.properties.name);
+                    d3.select("#name").text(d.properties.name);
+                });
+        });
+
+    </script>
+</body>
+
+</html>

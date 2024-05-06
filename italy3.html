@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earthquakes Visualization</title>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="http://d3js.org/topojson.v1.min.js"></script>
+</head>
+
+<body>
+    <script>
+        var width = 1200;
+        var height = 800;
+
+        var projection = d3.geo.mercator()
+            .scale(150)
+            .translate([width / 2, height / 2]);
+
+        var path = d3.geo.path()
+            .projection(projection);
+
+        var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .style("margin-left", "100")
+            .style("background", "white");
+
+        d3.select("body")
+            .append("div")
+            .attr("id", "tooltip")
+            .style("position", "absolute")
+            .style("visibility", "hidden");
+
+        // Učitavanje granica država
+        d3.json("countries.json", function (error, world) {
+            if (error) throw error;
+
+            var countries = world.features;
+
+            // Učitavanje podataka o potresima
+            d3.json("earthquakes1970-2014.json", function (error, earthquakes) {
+                if (error) throw error;
+
+                // Mapiranje država na broj potresa
+                var countryEarthquakeCounts = {};
+
+                earthquakes.features.forEach(function (earthquake) {
+                    var coords = earthquake.geometry.coordinates;
+                    var quakePoint = projection([coords[0], coords[1]]);
+                    countries.forEach(function (country) {
+                        // Provjeri je li točka potresa unutar granica države
+                        if (path(country).contains(quakePoint)) {
+                            var countryName = country.properties.name;
+                            if (!countryEarthquakeCounts[countryName]) {
+                                countryEarthquakeCounts[countryName] = 0;
+                            }
+                            countryEarthquakeCounts[countryName]++;
+                        }
+                    });
+                });
+
+                // Crtanje država na karti
+                svg.selectAll("path")
+                    .data(countries)
+                    .enter().append("path")
+                    .attr("d", path)
+                    .style("fill", "lightgray")
+                    .style("stroke", "white")
+                    .style("stroke-width", 0.5);
+
+                // Prikazivanje broja potresa u tooltipu
+                svg.selectAll("path")
+                    .on("mouseover", function (d) {
+                        var countryName = d.properties.name;
+                        var numEarthquakes = countryEarthquakeCounts[countryName] || 0;
+                        d3.select("#tooltip")
+                            .style("visibility", "visible")
+                            .text(countryName + ": " + numEarthquakes + " earthquakes")
+                            .style("top", (d3.event.pageY - 10) + "px")
+                            .style("left", (d3.event.pageX + 10) + "px");
+                    })
+                    .on("mouseout", function () {
+                        d3.select("#tooltip").style("visibility", "hidden");
+                    });
+            });
+        });
+
+    </script>
+</body>
+
+</html>
